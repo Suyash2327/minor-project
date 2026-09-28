@@ -99,14 +99,15 @@ def forecast_next_24(
     model_type: str,
     model,
     scaler,
+    horizon: int = 24,
 ) -> np.ndarray:
     """
-    Given a DataFrame of recent engineered features, predict the next 24 hours.
-    Uses the last 24 rows (or LSTM window) of recent_df.
+    Given a DataFrame of recent engineered features, predict the next `horizon` hours.
+    Uses the last `horizon` rows (or LSTM window) of recent_df.
     """
     if model_type == "tree":
-        # Take the last 24 rows -> predict each independently
-        X = recent_df[TREE_FEATURES].tail(24).values
+        # Take the exact target `horizon` rows -> predict each
+        X = recent_df[TREE_FEATURES].tail(horizon).values
         X_scaled = scaler.transform(X)
         return model.predict(X_scaled)
 
@@ -117,7 +118,7 @@ def forecast_next_24(
         # Take the last LSTM_WINDOW rows as the input sequence
         window = vals[-LSTM_WINDOW:]  # shape (LSTM_WINDOW, n_features)
         predictions = []
-        for _ in range(24):
+        for _ in range(horizon):
             X_input = window[np.newaxis, :, :]  # (1, LSTM_WINDOW, n_features)
             y_scaled = model.predict(X_input, verbose=0)[0, 0]
             # Build a dummy inverse-transform
@@ -183,7 +184,7 @@ def run_pipeline(
     combined = pd.concat([context, target_slice])
     combined = _engineer(combined.copy())
 
-    forecast_load = forecast_next_24(combined, model_type, model, scaler)
+    forecast_load = forecast_next_24(combined, model_type, model, scaler, horizon=horizon)
     forecast_load = np.clip(forecast_load, 0, None)[:horizon]
 
     # ── Metrics ──────────────────────────────────────────

@@ -232,15 +232,26 @@ base_cost = baseline["cost"].sum()
 saving_pct = (base_cost - opt_cost) / base_cost * 100 if base_cost > 0 else 0
 solar_pct  = optimized["solar_kw"].sum() / (optimized["load_kw"].sum() + 1e-9) * 100
 
+cost_diff = base_cost - opt_cost
 c1, c2, c3, c4, c5 = st.columns(5)
 with c1:
     st.metric("🏆 Best Model", model_name.replace("_", " ").title())
 with c2:
     st.metric("📐 Forecast MAE", f"{metrics['MAE']:.3f} kW")
 with c3:
-    st.metric("💰 Optimized Cost", f"£{opt_cost:.2f}", delta=f"-£{base_cost - opt_cost:.2f} vs baseline")
+    st.metric(
+        "💰 Optimized Cost",
+        f"£{opt_cost:.2f}",
+        delta=f"-£{cost_diff:.2f} savings" if cost_diff >= 0 else f"+£{-cost_diff:.2f} higher",
+        delta_color="inverse",
+    )
 with c4:
-    st.metric("📉 Cost Saving", f"{saving_pct:.1f}%", delta="vs reactive baseline")
+    st.metric(
+        "📉 Cost Saving",
+        f"{saving_pct:.1f}%",
+        delta="vs reactive baseline",
+        delta_color="off",
+    )
 with c5:
     st.metric("☀️ Solar Coverage", f"{solar_pct:.1f}%")
 
